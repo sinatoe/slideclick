@@ -210,7 +210,7 @@ class ClickerService : Service() {
             )
         }
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
