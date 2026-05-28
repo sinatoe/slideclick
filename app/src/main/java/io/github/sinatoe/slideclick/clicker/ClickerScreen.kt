@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -40,7 +41,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.shouldShowRationale
 import io.github.sinatoe.slideclick.R
-import io.github.sinatoe.slideclick.ui.theme.AppTheme
+import io.github.sinatoe.slideclick.theme.AppTheme
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -196,7 +197,7 @@ private fun ClickerScreen(
     }
 }
 
-@PreviewLightDark
+@Preview
 @Composable
 private fun ClickerScreen_Preview() {
     AppTheme {
