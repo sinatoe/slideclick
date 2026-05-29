@@ -1,7 +1,7 @@
 package io.github.sinatoe.slideclick.clicker
 
 sealed interface ClickerStatus {
-    data object Idle : ClickerStatus
+    data object Disconnected : ClickerStatus
 
     data class Connected(val deviceName: String) : ClickerStatus
 

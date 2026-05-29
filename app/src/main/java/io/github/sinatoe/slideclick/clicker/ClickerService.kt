@@ -154,11 +154,11 @@ class ClickerService : Service() {
                         if (device != null) {
                             ClickerStatus.Connected(device.name)
                         } else {
-                            ClickerStatus.Idle
+                            ClickerStatus.Disconnected
                         }
                     }
             } else {
-                flowOf(ClickerStatus.Idle)
+                flowOf(ClickerStatus.Disconnected)
             }
         }
         .stateIn(

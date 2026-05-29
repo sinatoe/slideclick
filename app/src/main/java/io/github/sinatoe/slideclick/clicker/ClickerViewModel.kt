@@ -50,11 +50,11 @@ class ClickerViewModel(application: Application) : AndroidViewModel(application)
         )
 
     val status = service
-        .flatMapLatest { it?.status ?: flowOf(ClickerStatus.Idle) }
+        .flatMapLatest { it?.status ?: flowOf(ClickerStatus.Disconnected) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5.seconds),
-            initialValue = ClickerStatus.Idle,
+            initialValue = ClickerStatus.Disconnected,
         )
 
     fun sendCommand(command: ClickerCommand) {
