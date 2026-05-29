@@ -178,7 +178,7 @@ class ClickerService : Service() {
 
         val channel = NotificationChannel(
             CONNECTION_NOTIFICATION_CHANNEL_ID,
-            "Active connection",
+            "Connection service",
             NotificationManager.IMPORTANCE_LOW,
         )
 
@@ -193,7 +193,7 @@ class ClickerService : Service() {
         }
 
         val notification = NotificationCompat.Builder(this, CONNECTION_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Maintaining Bluetooth connection")
+            .setContentTitle("Connection service is active")
             .setSmallIcon(R.drawable.ic_notification_small)
             .build()
 
@@ -224,7 +224,7 @@ class ClickerService : Service() {
     }
 
     companion object {
-        private const val CONNECTION_NOTIFICATION_CHANNEL_ID = "active_connection"
+        private const val CONNECTION_NOTIFICATION_CHANNEL_ID = "connection_service"
         private const val CONNECTION_NOTIFICATION_ID = 1001
 
         private const val REPORT_ID_KEYBOARD = 1
