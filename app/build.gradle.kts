@@ -21,12 +21,25 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+        }
+
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+
+        create("staging") {
+            initWith(getByName("release"))
+
+            applicationIdSuffix = ".staging"
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
