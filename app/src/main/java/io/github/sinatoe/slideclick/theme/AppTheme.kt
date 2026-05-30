@@ -14,7 +14,7 @@ fun AppTheme(
         colorScheme = rememberDynamicColorScheme(
             isDark = true,
             isAmoled = true,
-            primary = Color(0x000EA5E9),
+            primary = Color(0xFF0EA5E9),
             specVersion = ColorSpec.SpecVersion.SPEC_2025,
         ),
         content = content,
