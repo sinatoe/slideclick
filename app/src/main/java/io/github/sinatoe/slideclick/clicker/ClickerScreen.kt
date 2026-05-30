@@ -5,13 +5,14 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.platform.LocalContext
@@ -114,63 +116,104 @@ private fun ClickerScreen(
         },
     ) { contentPadding ->
         Column(
-            modifier = Modifier
-                .padding(contentPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(contentPadding),
         ) {
-            when (status) {
-                null -> {
-                    Text(
-                        text = "Nearby devices permission is required for the app",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                val (iconPainter, text) = when (status) {
+                    null -> {
+                        Pair(
+                            painterResource(R.drawable.ic_security),
+                            "Nearby devices permission is needed to connect",
+                        )
+                    }
 
-                    Button(
-                        onClick = onRequestPermission,
-                    ) {
-                        Text(text = "Grant permission")
+                    ClickerStatus.Disconnected -> {
+                        Pair(
+                            painterResource(R.drawable.ic_devices_outlined),
+                            "No host device connected via Bluetooth",
+                        )
+                    }
+
+                    is ClickerStatus.Connected -> {
+                        Pair(
+                            painterResource(R.drawable.ic_devices_filled),
+                            "Connected to ${status.deviceName}",
+                        )
+                    }
+
+                    ClickerStatus.Unsupported -> {
+                        Pair(
+                            painterResource(R.drawable.ic_devices_off),
+                            "Bluetooth is not supported on your device",
+                        )
                     }
                 }
 
-                ClickerStatus.Disconnected -> {
-                    Text(
-                        text = "No device connected",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
+                val (iconBackground, iconTint) = if (isConnected) {
+                    Pair(
+                        MaterialTheme.colorScheme.secondary,
+                        MaterialTheme.colorScheme.onSecondary,
+                    )
+                } else {
+                    Pair(
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                        MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
-                is ClickerStatus.Connected -> {
-                    Text(
-                        text = "Connected to ${status.deviceName}",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
+                Icon(
+                    painter = iconPainter,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(iconBackground)
+                        .padding(16.dp)
+                        .size(32.dp),
+                    tint = iconTint,
+                )
 
-                ClickerStatus.Unsupported -> {
-                    Text(
-                        text = "This device can't run this app",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+                Text(
+                    text = text,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+
+                if (status == null) {
+                    Button(
+                        onClick = onRequestPermission,
+                    ) {
+                        Text(text = "Grant")
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 listOf(
-                    Triple(ClickerCommand.BACK, R.drawable.ic_chevron_backward, "Back"),
-                    Triple(ClickerCommand.FORWARD, R.drawable.ic_chevron_forward, "Forward"),
+                    Triple(
+                        ClickerCommand.BACK,
+                        painterResource(R.drawable.ic_chevron_backward),
+                        "Back",
+                    ),
+                    Triple(
+                        ClickerCommand.FORWARD,
+                        painterResource(R.drawable.ic_chevron_forward),
+                        "Forward",
+                    ),
                 )
-                    .forEach { (command, iconResourceId, iconDescription) ->
+                    .forEach { (command, iconPainter, iconDescription) ->
                         FilledTonalIconButton(
                             onClick = {
                                 onSendCommand(command)
@@ -185,7 +228,7 @@ private fun ClickerScreen(
                             shape = IconButtonDefaults.extraLargeRoundShape,
                         ) {
                             Icon(
-                                painter = painterResource(iconResourceId),
+                                painter = iconPainter,
                                 contentDescription = iconDescription,
                                 modifier = Modifier.size(IconButtonDefaults.extraLargeIconSize),
                             )
