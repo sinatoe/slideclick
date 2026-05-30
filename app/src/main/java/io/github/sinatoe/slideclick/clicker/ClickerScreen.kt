@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -32,6 +31,7 @@ import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -94,7 +94,6 @@ fun ClickerScreen(viewModel: ClickerViewModel = viewModel()) {
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ClickerScreen(
     status: ClickerStatus?,
@@ -110,7 +109,7 @@ private fun ClickerScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(text = "Slideclick")
+                    Text(text = stringResource(R.string.clicker_title_main))
                 },
             )
         },
@@ -130,28 +129,28 @@ private fun ClickerScreen(
                     null -> {
                         Pair(
                             painterResource(R.drawable.ic_security),
-                            "Nearby devices permission is needed to connect",
+                            stringResource(R.string.clicker_status_permission_needed),
                         )
                     }
 
                     ClickerStatus.Disconnected -> {
                         Pair(
                             painterResource(R.drawable.ic_devices_outlined),
-                            "No host device connected via Bluetooth",
+                            stringResource(R.string.clicker_status_disconnected),
                         )
                     }
 
                     is ClickerStatus.Connected -> {
                         Pair(
                             painterResource(R.drawable.ic_devices_filled),
-                            "Connected to ${status.deviceName}",
+                            stringResource(R.string.clicker_status_connected, status.deviceName),
                         )
                     }
 
                     ClickerStatus.Unsupported -> {
                         Pair(
                             painterResource(R.drawable.ic_devices_off),
-                            "Bluetooth is not supported on your device",
+                            stringResource(R.string.clicker_status_unsupported),
                         )
                     }
                 }
@@ -189,7 +188,7 @@ private fun ClickerScreen(
                     Button(
                         onClick = onRequestPermission,
                     ) {
-                        Text(text = "Grant")
+                        Text(text = stringResource(R.string.clicker_btn_grant))
                     }
                 }
             }
@@ -205,12 +204,12 @@ private fun ClickerScreen(
                     Triple(
                         ClickerCommand.BACK,
                         painterResource(R.drawable.ic_chevron_backward),
-                        "Back",
+                        stringResource(R.string.clicker_cd_back),
                     ),
                     Triple(
                         ClickerCommand.FORWARD,
                         painterResource(R.drawable.ic_chevron_forward),
-                        "Forward",
+                        stringResource(R.string.clicker_cd_forward),
                     ),
                 )
                     .forEach { (command, iconPainter, iconDescription) ->

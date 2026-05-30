@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Slideclick</string>
+    <string name="clicker_btn_grant">Grant</string>
+    <string name="clicker_cd_back">Back</string>
+    <string name="clicker_cd_forward">Forward</string>
+    <string name="clicker_status_connected">Connected to %1$s</string>
+    <string name="clicker_status_disconnected">No host device connected via Bluetooth</string>
+    <string name="clicker_status_permission_needed">Nearby devices permission is needed to connect</string>
+    <string name="clicker_status_unsupported">Bluetooth is not supported on your device</string>
+    <string name="clicker_title_main">Slideclick</string>
+    <string name="service_notification_channel_name">Connection service</string>
+    <string name="service_notification_title">Connection service is active</string>
+</resources>

@@ -108,9 +108,9 @@ class ClickerService : Service() {
                     }
 
                     val sdp = BluetoothHidDeviceAppSdpSettings(
-                        "Slideclick",
-                        "Virtual keyboard",
-                        "Android",
+                        SDP_NAME,
+                        SDP_DESCRIPTION,
+                        SDP_PROVIDER,
                         BluetoothHidDevice.SUBCLASS1_KEYBOARD,
                         KEYBOARD_DESCRIPTOR
                             .map { it.toByte() }
@@ -178,7 +178,7 @@ class ClickerService : Service() {
 
         val channel = NotificationChannel(
             CONNECTION_NOTIFICATION_CHANNEL_ID,
-            "Connection service",
+            getString(R.string.service_notification_channel_name),
             NotificationManager.IMPORTANCE_LOW,
         )
 
@@ -193,7 +193,7 @@ class ClickerService : Service() {
         }
 
         val notification = NotificationCompat.Builder(this, CONNECTION_NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Connection service is active")
+            .setContentTitle(getString(R.string.service_notification_title))
             .setSmallIcon(R.drawable.ic_notification_small)
             .build()
 
@@ -226,6 +226,10 @@ class ClickerService : Service() {
     companion object {
         private const val CONNECTION_NOTIFICATION_CHANNEL_ID = "connection_service"
         private const val CONNECTION_NOTIFICATION_ID = 1001
+
+        private const val SDP_NAME = "Slideclick"
+        private const val SDP_DESCRIPTION = "Virtual keyboard"
+        private const val SDP_PROVIDER = "Android"
 
         private const val REPORT_ID_KEYBOARD = 1
 
