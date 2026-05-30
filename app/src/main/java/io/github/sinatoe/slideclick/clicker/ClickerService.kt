@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothHidDevice
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Binder
@@ -23,6 +24,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
@@ -30,10 +32,57 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import java.util.concurrent.Executors
+
+private const val CONNECTION_NOTIFICATION_CHANNEL_ID = "connection_service"
+private const val CONNECTION_NOTIFICATION_ID = 1001
+
+private const val SDP_NAME = "Slideclick"
+private const val SDP_DESCRIPTION = "Virtual keyboard"
+private const val SDP_PROVIDER = "Android"
+
+private const val REPORT_ID_KEYBOARD = 1
+
+private const val KEY_PAGE_UP = 0x4B
+private const val KEY_PAGE_DOWN = 0x4E
+
+private val KEYBOARD_DESCRIPTOR = intArrayOf(
+    0x05, 0x01,
+    0x09, 0x06,
+    0xA1, 0x01,
+    0x85, 0x01,
+    0x05, 0x07,
+    0x19, 0xE0,
+    0x29, 0xE7,
+    0x15, 0x00,
+    0x25, 0x01,
+    0x75, 0x01,
+    0x95, 0x08,
+    0x81, 0x02,
+    0x95, 0x01,
+    0x75, 0x08,
+    0x81, 0x03,
+    0x95, 0x05,
+    0x75, 0x01,
+    0x05, 0x08,
+    0x19, 0x01,
+    0x29, 0x05,
+    0x91, 0x02,
+    0x95, 0x01,
+    0x75, 0x03,
+    0x91, 0x03,
+    0x95, 0x06,
+    0x75, 0x08,
+    0x15, 0x00,
+    0x25, 0x65,
+    0x05, 0x07,
+    0x19, 0x00,
+    0x29, 0x65,
+    0x81, 0x00,
+    0xC0,
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @SuppressLint("MissingPermission")
@@ -54,111 +103,20 @@ class ClickerService : Service() {
 
     val status = flow { emit(bluetoothAdapter) }
         .filterNotNull()
-        .flatMapLatest { adapter ->
-            callbackFlow {
-                trySend(null)
-
-                var currentProxy: BluetoothHidDevice? = null
-
-                val listener = object : BluetoothProfile.ServiceListener {
-                    override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
-                        if (profile == BluetoothProfile.HID_DEVICE) {
-                            currentProxy = (proxy as BluetoothHidDevice).also { trySend(it) }
-                        }
-                    }
-
-                    override fun onServiceDisconnected(profile: Int) {
-                        if (profile == BluetoothProfile.HID_DEVICE) {
-                            currentProxy = null
-                            trySend(null)
-                        }
-                    }
-                }
-
-                adapter.getProfileProxy(applicationContext, listener, BluetoothProfile.HID_DEVICE)
-
-                awaitClose {
-                    adapter.closeProfileProxy(BluetoothProfile.HID_DEVICE, currentProxy)
-                }
-            }
-        }
+        .flatMapLatest { adapter -> adapter.hidDeviceProxyFlow(applicationContext) }
         .flatMapLatest { proxy ->
-            if (proxy != null) {
-                callbackFlow {
-                    val callback = object : BluetoothHidDevice.Callback() {
-                        override fun onAppStatusChanged(
-                            pluggedDevice: BluetoothDevice?,
-                            registered: Boolean,
-                        ) {
-                            if (registered && pluggedDevice != null) {
-                                val connectionState = proxy.getConnectionState(pluggedDevice)
+            if (proxy == null) {
+                return@flatMapLatest flowOf<ClickerStatus>(ClickerStatus.Disconnected)
+            }
 
-                                if (connectionState == BluetoothProfile.STATE_DISCONNECTED) {
-                                    proxy.connect(pluggedDevice)
-                                }
-                            }
-                        }
-
-                        override fun onConnectionStateChanged(device: BluetoothDevice, state: Int) {
-                            when (state) {
-                                BluetoothProfile.STATE_CONNECTED -> trySend(device)
-                                BluetoothProfile.STATE_DISCONNECTED -> trySend(null)
-                            }
-                        }
-                    }
-
-                    val sdp = BluetoothHidDeviceAppSdpSettings(
-                        SDP_NAME,
-                        SDP_DESCRIPTION,
-                        SDP_PROVIDER,
-                        BluetoothHidDevice.SUBCLASS1_KEYBOARD,
-                        KEYBOARD_DESCRIPTOR
-                            .map { it.toByte() }
-                            .toByteArray(),
-                    )
-
-                    val executor = Executors.newSingleThreadExecutor()
-
-                    proxy.registerApp(sdp, null, null, executor, callback)
-
-                    awaitClose {
-                        proxy.unregisterApp()
-                        executor.shutdown()
-                    }
+            proxy.connectedDeviceFlow().transformLatest { device ->
+                if (device == null) {
+                    return@transformLatest emit(ClickerStatus.Disconnected)
                 }
-                    .transformLatest { device ->
-                        emit(device)
 
-                        if (device != null) {
-                            clickerCommand.collect { command ->
-                                val keyCode = when (command) {
-                                    ClickerCommand.BACK -> KEY_PAGE_UP
-                                    ClickerCommand.FORWARD -> KEY_PAGE_DOWN
-                                }
+                emit(ClickerStatus.Connected(device.name))
 
-                                proxy.sendReport(
-                                    device,
-                                    REPORT_ID_KEYBOARD,
-                                    ByteArray(8).apply { set(2, keyCode.toByte()) },
-                                )
-
-                                proxy.sendReport(
-                                    device,
-                                    REPORT_ID_KEYBOARD,
-                                    ByteArray(8),
-                                )
-                            }
-                        }
-                    }
-                    .map { device ->
-                        if (device != null) {
-                            ClickerStatus.Connected(device.name)
-                        } else {
-                            ClickerStatus.Disconnected
-                        }
-                    }
-            } else {
-                flowOf(ClickerStatus.Disconnected)
+                clickerCommand.collectAsHidReports(proxy, device)
             }
         }
         .stateIn(
@@ -222,54 +180,101 @@ class ClickerService : Service() {
         super.onDestroy()
         serviceScope.cancel()
     }
+}
 
-    companion object {
-        private const val CONNECTION_NOTIFICATION_CHANNEL_ID = "connection_service"
-        private const val CONNECTION_NOTIFICATION_ID = 1001
+private fun BluetoothAdapter.hidDeviceProxyFlow(context: Context): Flow<BluetoothHidDevice?> =
+    callbackFlow {
+        trySend(null)
 
-        private const val SDP_NAME = "Slideclick"
-        private const val SDP_DESCRIPTION = "Virtual keyboard"
-        private const val SDP_PROVIDER = "Android"
+        var currentProxy: BluetoothHidDevice? = null
 
-        private const val REPORT_ID_KEYBOARD = 1
+        val listener = object : BluetoothProfile.ServiceListener {
+            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+                if (profile == BluetoothProfile.HID_DEVICE) {
+                    currentProxy = (proxy as BluetoothHidDevice).also { trySend(it) }
+                }
+            }
 
-        private const val KEY_PAGE_UP = 0x4B
-        private const val KEY_PAGE_DOWN = 0x4E
+            override fun onServiceDisconnected(profile: Int) {
+                if (profile == BluetoothProfile.HID_DEVICE) {
+                    currentProxy = null
+                    trySend(null)
+                }
+            }
+        }
 
-        private val KEYBOARD_DESCRIPTOR = intArrayOf(
-            0x05, 0x01,
-            0x09, 0x06,
-            0xA1, 0x01,
-            0x85, 0x01,
-            0x05, 0x07,
-            0x19, 0xE0,
-            0x29, 0xE7,
-            0x15, 0x00,
-            0x25, 0x01,
-            0x75, 0x01,
-            0x95, 0x08,
-            0x81, 0x02,
-            0x95, 0x01,
-            0x75, 0x08,
-            0x81, 0x03,
-            0x95, 0x05,
-            0x75, 0x01,
-            0x05, 0x08,
-            0x19, 0x01,
-            0x29, 0x05,
-            0x91, 0x02,
-            0x95, 0x01,
-            0x75, 0x03,
-            0x91, 0x03,
-            0x95, 0x06,
-            0x75, 0x08,
-            0x15, 0x00,
-            0x25, 0x65,
-            0x05, 0x07,
-            0x19, 0x00,
-            0x29, 0x65,
-            0x81, 0x00,
-            0xC0,
+        getProfileProxy(context, listener, BluetoothProfile.HID_DEVICE)
+
+        awaitClose {
+            closeProfileProxy(BluetoothProfile.HID_DEVICE, currentProxy)
+        }
+    }
+
+@SuppressLint("MissingPermission")
+private fun BluetoothHidDevice.connectedDeviceFlow(): Flow<BluetoothDevice?> = callbackFlow {
+    val callback = object : BluetoothHidDevice.Callback() {
+        override fun onAppStatusChanged(
+            pluggedDevice: BluetoothDevice?,
+            registered: Boolean,
+        ) {
+            if (registered && pluggedDevice != null) {
+                val connectionState = getConnectionState(pluggedDevice)
+
+                if (connectionState == BluetoothProfile.STATE_DISCONNECTED) {
+                    connect(pluggedDevice)
+                }
+            }
+        }
+
+        override fun onConnectionStateChanged(device: BluetoothDevice, state: Int) {
+            when (state) {
+                BluetoothProfile.STATE_CONNECTED -> trySend(device)
+                BluetoothProfile.STATE_DISCONNECTED -> trySend(null)
+            }
+        }
+    }
+
+    val sdp = BluetoothHidDeviceAppSdpSettings(
+        SDP_NAME,
+        SDP_DESCRIPTION,
+        SDP_PROVIDER,
+        BluetoothHidDevice.SUBCLASS1_KEYBOARD,
+        KEYBOARD_DESCRIPTOR
+            .map { it.toByte() }
+            .toByteArray(),
+    )
+
+    val executor = Executors.newSingleThreadExecutor()
+
+    registerApp(sdp, null, null, executor, callback)
+
+    awaitClose {
+        unregisterApp()
+        executor.shutdown()
+    }
+}
+
+@SuppressLint("MissingPermission")
+private suspend fun Flow<ClickerCommand>.collectAsHidReports(
+    proxy: BluetoothHidDevice,
+    device: BluetoothDevice,
+) {
+    collect { command ->
+        val keyCode = when (command) {
+            ClickerCommand.BACK -> KEY_PAGE_UP
+            ClickerCommand.FORWARD -> KEY_PAGE_DOWN
+        }
+
+        proxy.sendReport(
+            device,
+            REPORT_ID_KEYBOARD,
+            ByteArray(8).apply { set(2, keyCode.toByte()) },
+        )
+
+        proxy.sendReport(
+            device,
+            REPORT_ID_KEYBOARD,
+            ByteArray(8),
         )
     }
 }
