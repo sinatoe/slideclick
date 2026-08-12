@@ -1,4 +1,4 @@
-package io.github.sinatoe.slideclick.theme
+package io.github.sinatoe.slideclick.common.ui
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable

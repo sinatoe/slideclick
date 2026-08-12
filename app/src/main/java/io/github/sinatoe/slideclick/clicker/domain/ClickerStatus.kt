@@ -1,4 +1,4 @@
-package io.github.sinatoe.slideclick.clicker
+package io.github.sinatoe.slideclick.clicker.domain
 
 sealed interface ClickerStatus {
     data object Disconnected : ClickerStatus

@@ -1,4 +1,4 @@
-package io.github.sinatoe.slideclick.clicker
+package io.github.sinatoe.slideclick.clicker.ui
 
 import android.Manifest
 import android.content.Intent
@@ -36,17 +36,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.shouldShowRationale
 import io.github.sinatoe.slideclick.R
-import io.github.sinatoe.slideclick.theme.AppTheme
+import io.github.sinatoe.slideclick.clicker.domain.ClickerCommand
+import io.github.sinatoe.slideclick.clicker.domain.ClickerStatus
+import io.github.sinatoe.slideclick.common.ui.AppTheme
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun ClickerScreen(viewModel: ClickerViewModel = viewModel()) {
+fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
     val context = LocalContext.current
 
     val permissionsState = rememberMultiplePermissionsState(

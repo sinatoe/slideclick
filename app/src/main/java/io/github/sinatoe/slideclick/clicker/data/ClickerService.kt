@@ -1,4 +1,4 @@
-package io.github.sinatoe.slideclick.clicker
+package io.github.sinatoe.slideclick.clicker.data
 
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -18,6 +18,9 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import io.github.sinatoe.slideclick.R
+import io.github.sinatoe.slideclick.clicker.domain.ClickerCommand
+import io.github.sinatoe.slideclick.clicker.domain.ClickerConnection
+import io.github.sinatoe.slideclick.clicker.domain.ClickerStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,7 +89,7 @@ private val KEYBOARD_DESCRIPTOR = intArrayOf(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @SuppressLint("MissingPermission")
-class ClickerService : Service() {
+class ClickerService : Service(), ClickerConnection {
     inner class LocalBinder : Binder() {
         fun getService(): ClickerService = this@ClickerService
     }
@@ -101,7 +104,7 @@ class ClickerService : Service() {
 
     private val clickerCommand = MutableSharedFlow<ClickerCommand>(extraBufferCapacity = 1)
 
-    val status = flow { emit(bluetoothAdapter) }
+    override val status = flow { emit(bluetoothAdapter) }
         .filterNotNull()
         .flatMapLatest { adapter -> adapter.hidDeviceProxyFlow(applicationContext) }
         .flatMapLatest { proxy ->
@@ -125,7 +128,7 @@ class ClickerService : Service() {
             initialValue = ClickerStatus.Unsupported,
         )
 
-    fun sendCommand(command: ClickerCommand) {
+    override fun sendCommand(command: ClickerCommand) {
         clickerCommand.tryEmit(command)
     }
 
