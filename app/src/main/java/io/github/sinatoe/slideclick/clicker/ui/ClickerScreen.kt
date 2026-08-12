@@ -18,6 +18,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -226,7 +227,10 @@ private fun ClickerScreen(
                                     IconButtonDefaults.IconButtonWidthOption.Narrow,
                                 ),
                             ),
-                            shape = IconButtonDefaults.extraLargeRoundShape,
+                            shapes = IconButtonShapes(
+                                shape = IconButtonDefaults.extraLargeRoundShape,
+                                pressedShape = IconButtonDefaults.extraLargePressedShape,
+                            ),
                         ) {
                             Icon(
                                 painter = iconPainter,
