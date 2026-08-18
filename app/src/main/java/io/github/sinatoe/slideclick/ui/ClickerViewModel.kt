@@ -1,10 +1,10 @@
-package io.github.sinatoe.slideclick.clicker.ui
+package io.github.sinatoe.slideclick.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.sinatoe.slideclick.clicker.domain.ClickerCommand
-import io.github.sinatoe.slideclick.clicker.domain.ClickerConnection
-import io.github.sinatoe.slideclick.clicker.domain.ClickerStatus
+import io.github.sinatoe.slideclick.domain.ClickerCommand
+import io.github.sinatoe.slideclick.domain.ClickerConnection
+import io.github.sinatoe.slideclick.domain.ClickerStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted

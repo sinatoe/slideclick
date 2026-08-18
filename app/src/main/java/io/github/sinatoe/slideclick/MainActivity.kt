@@ -6,8 +6,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import io.github.sinatoe.slideclick.clicker.ui.ClickerScreen
-import io.github.sinatoe.slideclick.common.ui.AppTheme
+import io.github.sinatoe.slideclick.ui.AppTheme
+import io.github.sinatoe.slideclick.ui.ClickerScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

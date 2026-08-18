@@ -1,4 +1,4 @@
-package io.github.sinatoe.slideclick.clicker.domain
+package io.github.sinatoe.slideclick.domain
 
 import kotlinx.coroutines.flow.Flow
 

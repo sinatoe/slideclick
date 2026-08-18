@@ -1,4 +1,4 @@
-package io.github.sinatoe.slideclick.clicker.ui
+package io.github.sinatoe.slideclick.ui
 
 import android.Manifest
 import android.content.Intent
@@ -42,9 +42,8 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.accompanist.permissions.shouldShowRationale
 import io.github.sinatoe.slideclick.R
-import io.github.sinatoe.slideclick.clicker.domain.ClickerCommand
-import io.github.sinatoe.slideclick.clicker.domain.ClickerStatus
-import io.github.sinatoe.slideclick.common.ui.AppTheme
+import io.github.sinatoe.slideclick.domain.ClickerCommand
+import io.github.sinatoe.slideclick.domain.ClickerStatus
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalPermissionsApi::class)

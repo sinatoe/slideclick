@@ -1,4 +1,4 @@
-package io.github.sinatoe.slideclick.clicker.data
+package io.github.sinatoe.slideclick.data
 
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -10,17 +10,20 @@ import android.bluetooth.BluetoothHidDevice
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import io.github.sinatoe.slideclick.R
-import io.github.sinatoe.slideclick.clicker.domain.ClickerCommand
-import io.github.sinatoe.slideclick.clicker.domain.ClickerConnection
-import io.github.sinatoe.slideclick.clicker.domain.ClickerStatus
+import io.github.sinatoe.slideclick.domain.ClickerCommand
+import io.github.sinatoe.slideclick.domain.ClickerConnection
+import io.github.sinatoe.slideclick.domain.ClickerStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -182,6 +185,30 @@ class ClickerService : Service(), ClickerConnection {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
+    }
+
+    companion object {
+        fun connectionFlow(context: Context): Flow<ClickerConnection?> = callbackFlow {
+            val serviceConnection = object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+                    trySend((binder as LocalBinder).getService())
+                }
+
+                override fun onServiceDisconnected(name: ComponentName?) {
+                    trySend(null)
+                }
+            }
+
+            val intent = Intent(context, ClickerService::class.java)
+
+            ContextCompat.startForegroundService(context, intent)
+            context.bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+
+            awaitClose {
+                context.unbindService(serviceConnection)
+                context.stopService(intent)
+            }
+        }
     }
 }
 

@@ -37,7 +37,7 @@
         </activity>
 
         <service
-            android:name=".clicker.data.ClickerService"
+            android:name=".data.ClickerService"
             android:foregroundServiceType="connectedDevice" />
     </application>
 
