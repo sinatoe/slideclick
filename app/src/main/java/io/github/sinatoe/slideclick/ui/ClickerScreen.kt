@@ -12,16 +12,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.MaterialShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -96,6 +98,7 @@ fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ClickerScreen(
     status: ClickerStatus?,
@@ -159,8 +162,8 @@ private fun ClickerScreen(
 
                 val (iconBackground, iconTint) = if (isConnected) {
                     Pair(
-                        MaterialTheme.colorScheme.secondary,
-                        MaterialTheme.colorScheme.onSecondary,
+                        MaterialTheme.colorScheme.secondaryContainer,
+                        MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 } else {
                     Pair(
@@ -173,9 +176,9 @@ private fun ClickerScreen(
                     painter = iconPainter,
                     contentDescription = null,
                     modifier = Modifier
-                        .clip(CircleShape)
+                        .clip(MaterialShapes.Sunny.toShape())
                         .background(iconBackground)
-                        .padding(16.dp)
+                        .padding(24.dp)
                         .size(32.dp),
                     tint = iconTint,
                 )
