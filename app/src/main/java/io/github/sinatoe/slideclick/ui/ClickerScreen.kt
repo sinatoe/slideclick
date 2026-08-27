@@ -5,6 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,7 +28,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,61 +40,61 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.google.accompanist.permissions.shouldShowRationale
 import io.github.sinatoe.slideclick.R
 import io.github.sinatoe.slideclick.domain.ClickerCommand
 import io.github.sinatoe.slideclick.domain.ClickerStatus
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
     val context = LocalContext.current
+    val activity = LocalActivity.current
 
-    val permissionsState = rememberMultiplePermissionsState(
-        buildList {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                add(Manifest.permission.BLUETOOTH_CONNECT)
-            }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { results ->
+        val (granted, showRationale) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val granted = results[Manifest.permission.BLUETOOTH_CONNECT] == true
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                add(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        },
-    )
+            val showRationale = activity?.let {
+                ActivityCompat.shouldShowRequestPermissionRationale(
+                    it,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                )
+            } ?: true
 
-    val bluetoothPermissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        permissionsState.permissions.find { it.permission == Manifest.permission.BLUETOOTH_CONNECT }
-    } else {
-        null
-    }
+            granted to showRationale
+        } else {
+            true to false
+        }
 
-    LaunchedEffect(Unit) {
-        if (!permissionsState.allPermissionsGranted) {
-            permissionsState.launchMultiplePermissionRequest()
+        if (granted) {
+            viewModel.notifyPermissionGranted()
+        } else if (!showRationale) {
+            context.startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                },
+            )
         }
     }
 
     ClickerScreen(
-        status = if (bluetoothPermissionState?.status?.isGranted != false) {
-            viewModel.status.collectAsStateWithLifecycle().value
-        } else {
-            null
-        },
+        status = viewModel.status.collectAsStateWithLifecycle().value,
         onRequestPermission = {
-            if (bluetoothPermissionState?.status?.shouldShowRationale == true) {
-                bluetoothPermissionState.launchPermissionRequest()
-            } else {
-                context.startActivity(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", context.packageName, null)
-                    },
-                )
-            }
+            permissionLauncher.launch(
+                buildList {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        add(Manifest.permission.BLUETOOTH_CONNECT)
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        add(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }.toTypedArray(),
+            )
         },
         onSendCommand = { viewModel.sendCommand(it) },
     )
@@ -101,7 +103,7 @@ fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ClickerScreen(
-    status: ClickerStatus?,
+    status: ClickerStatus,
     onRequestPermission: () -> Unit,
     onSendCommand: (ClickerCommand) -> Unit,
 ) {
@@ -131,17 +133,17 @@ private fun ClickerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 val (iconPainter, text) = when (status) {
-                    null -> {
-                        Pair(
-                            painterResource(R.drawable.ic_security),
-                            stringResource(R.string.clicker_status_permission_needed),
-                        )
-                    }
-
                     ClickerStatus.Disconnected -> {
                         Pair(
                             painterResource(R.drawable.ic_devices_outlined),
                             stringResource(R.string.clicker_status_disconnected),
+                        )
+                    }
+
+                    ClickerStatus.MissingPermission -> {
+                        Pair(
+                            painterResource(R.drawable.ic_security),
+                            stringResource(R.string.clicker_status_permission_needed),
                         )
                     }
 
@@ -189,7 +191,7 @@ private fun ClickerScreen(
                     style = MaterialTheme.typography.titleMedium,
                 )
 
-                if (status == null) {
+                if (status == ClickerStatus.MissingPermission) {
                     Button(
                         onClick = onRequestPermission,
                     ) {

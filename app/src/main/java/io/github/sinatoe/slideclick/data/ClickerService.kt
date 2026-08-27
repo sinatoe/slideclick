@@ -20,6 +20,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.getSystemService
 import io.github.sinatoe.slideclick.R
 import io.github.sinatoe.slideclick.domain.ClickerCommand
 import io.github.sinatoe.slideclick.domain.ClickerConnection
@@ -102,7 +103,7 @@ class ClickerService : Service(), ClickerConnection {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private val bluetoothAdapter: BluetoothAdapter? by lazy {
-        (getSystemService(BLUETOOTH_SERVICE) as BluetoothManager).adapter
+        getSystemService<BluetoothManager>()?.adapter
     }
 
     private val clickerCommand = MutableSharedFlow<ClickerCommand>(extraBufferCapacity = 1)

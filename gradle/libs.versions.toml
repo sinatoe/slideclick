@@ -1,5 +1,4 @@
 [versions]
-accompanist = "0.37.3"
 activity = "1.13.0"
 agp = "9.3.1"
 composeBom = "2026.07.01"
@@ -13,7 +12,6 @@ lifecycle = "2.11.0"
 materialkolor = "5.0.0"
 
 [libraries]
-accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
 androidx-compose-bom = { module = "androidx.compose:compose-bom-alpha", version.ref = "composeBom" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
