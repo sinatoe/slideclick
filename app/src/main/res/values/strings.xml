@@ -9,6 +9,10 @@
     <string name="clicker_status_permission_needed">Nearby devices permission is needed to connect</string>
     <string name="clicker_status_unsupported">Bluetooth is not supported on your device</string>
     <string name="clicker_title_main">Slideclick</string>
+    <string name="permission_dialog_btn_cancel">Cancel</string>
+    <string name="permission_dialog_btn_settings">Open settings</string>
+    <string name="permission_dialog_message">Please allow Nearby devices in Settings to continue.</string>
+    <string name="permission_dialog_title">Permission denied</string>
     <string name="service_notification_channel_name">Connection service</string>
     <string name="service_notification_title">Connection service is active</string>
 </resources>

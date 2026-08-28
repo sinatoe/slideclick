@@ -30,6 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,30 +61,31 @@ fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
     val context = LocalContext.current
     val activity = LocalActivity.current
 
+    var showPermissionDenied by remember { mutableStateOf(false) }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { results ->
-        val showSettings = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val isGranted = results[Manifest.permission.BLUETOOTH_CONNECT] == true
-
-            val shouldShowRationale = activity?.let {
-                ActivityCompat.shouldShowRequestPermissionRationale(
-                    it,
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                )
-            } ?: true
-
-            !isGranted && !shouldShowRationale
-        } else {
-            false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return@rememberLauncherForActivityResult
         }
 
-        if (showSettings) {
-            context.startActivity(
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", context.packageName, null)
-                },
+        val isGranted = results[Manifest.permission.BLUETOOTH_CONNECT] == true
+
+        if (isGranted) {
+            viewModel.notifyPermissionGranted()
+            return@rememberLauncherForActivityResult
+        }
+
+        val shouldShowRationale = activity?.let {
+            ActivityCompat.shouldShowRequestPermissionRationale(
+                it,
+                Manifest.permission.BLUETOOTH_CONNECT,
             )
+        } ?: true
+
+        if (!shouldShowRationale) {
+            showPermissionDenied = true
         }
     }
 
@@ -98,6 +102,20 @@ fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
             }
 
             onPauseOrDispose { }
+        }
+
+        if (showPermissionDenied) {
+            PermissionDeniedDialog(
+                onDismiss = { showPermissionDenied = false },
+                onOpenSettings = {
+                    showPermissionDenied = false
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                        },
+                    )
+                },
+            )
         }
     }
 
