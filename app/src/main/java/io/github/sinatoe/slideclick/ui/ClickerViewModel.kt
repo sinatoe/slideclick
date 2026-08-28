@@ -1,10 +1,5 @@
 package io.github.sinatoe.slideclick.ui
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.sinatoe.slideclick.domain.ClickerCommand
@@ -23,19 +18,9 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClickerViewModel(
-    context: Context,
     connectionFlow: Flow<ClickerConnection?>,
 ) : ViewModel() {
-    private val isPermissionGranted = MutableStateFlow(
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.BLUETOOTH_CONNECT,
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        },
-    )
+    private val isPermissionGranted = MutableStateFlow(false)
 
     private val connection = connectionFlow
         .stateIn(

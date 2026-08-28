@@ -2,6 +2,7 @@ package io.github.sinatoe.slideclick.ui
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -28,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,6 +43,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.sinatoe.slideclick.R
 import io.github.sinatoe.slideclick.domain.ClickerCommand
@@ -49,30 +53,30 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
+    val status by viewModel.status.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
     val activity = LocalActivity.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { results ->
-        val (granted, showRationale) = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val granted = results[Manifest.permission.BLUETOOTH_CONNECT] == true
+        val showSettings = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val isGranted = results[Manifest.permission.BLUETOOTH_CONNECT] == true
 
-            val showRationale = activity?.let {
+            val shouldShowRationale = activity?.let {
                 ActivityCompat.shouldShowRequestPermissionRationale(
                     it,
                     Manifest.permission.BLUETOOTH_CONNECT,
                 )
             } ?: true
 
-            granted to showRationale
+            !isGranted && !shouldShowRationale
         } else {
-            true to false
+            false
         }
 
-        if (granted) {
-            viewModel.notifyPermissionGranted()
-        } else if (!showRationale) {
+        if (showSettings) {
             context.startActivity(
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.fromParts("package", context.packageName, null)
@@ -81,8 +85,24 @@ fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
         }
     }
 
+    if (status == ClickerStatus.MissingPermission) {
+        LifecycleResumeEffect(Unit) {
+            if (
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                viewModel.notifyPermissionGranted()
+            }
+
+            onPauseOrDispose { }
+        }
+    }
+
     ClickerScreen(
-        status = viewModel.status.collectAsStateWithLifecycle().value,
+        status = status,
         onRequestPermission = {
             permissionLauncher.launch(
                 buildList {
