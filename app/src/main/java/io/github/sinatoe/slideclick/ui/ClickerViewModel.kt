@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.WhileSubscribed
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -30,17 +31,13 @@ class ClickerViewModel(
         )
 
     val status = isPermissionGranted
-        .flatMapLatest { granted ->
-            if (granted) {
-                connection.flatMapLatest { it?.status ?: flowOf(ClickerStatus.Disconnected) }
-            } else {
-                flowOf(ClickerStatus.MissingPermission)
-            }
-        }
+        .filter { it }
+        .flatMapLatest { connection }
+        .flatMapLatest { it?.status ?: flowOf(ClickerStatus.Disconnected) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5.seconds),
-            initialValue = ClickerStatus.Disconnected,
+            initialValue = ClickerStatus.MissingPermission,
         )
 
     fun notifyPermissionGranted() {
