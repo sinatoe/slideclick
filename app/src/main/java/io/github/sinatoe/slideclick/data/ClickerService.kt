@@ -29,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -41,7 +42,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
-import java.util.concurrent.Executors
 
 private const val CONNECTION_NOTIFICATION_CHANNEL_ID = "connection_service"
 private const val CONNECTION_NOTIFICATION_ID = 1001
@@ -275,13 +275,10 @@ private fun BluetoothHidDevice.connectedDeviceFlow(): Flow<BluetoothDevice?> = c
             .toByteArray(),
     )
 
-    val executor = Executors.newSingleThreadExecutor()
-
-    registerApp(sdp, null, null, executor, callback)
+    registerApp(sdp, null, null, Dispatchers.Default.limitedParallelism(1).asExecutor(), callback)
 
     awaitClose {
         unregisterApp()
-        executor.shutdown()
     }
 }
 
