@@ -34,14 +34,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.launch
 
 private const val CONNECTION_NOTIFICATION_CHANNEL_ID = "connection_service"
 private const val CONNECTION_NOTIFICATION_ID = 1001
@@ -108,29 +107,9 @@ class ClickerService : Service(), ClickerConnection {
 
     private val clickerCommand = MutableSharedFlow<ClickerCommand>(extraBufferCapacity = 1)
 
-    override val status = flow { emit(bluetoothAdapter) }
-        .filterNotNull()
-        .flatMapLatest { adapter -> adapter.hidDeviceProxyFlow(applicationContext) }
-        .flatMapLatest { proxy ->
-            if (proxy == null) {
-                return@flatMapLatest flowOf<ClickerStatus>(ClickerStatus.Disconnected)
-            }
+    private val _status = MutableStateFlow<ClickerStatus>(ClickerStatus.Unsupported)
 
-            proxy.connectedDeviceFlow().transformLatest { device ->
-                if (device == null) {
-                    return@transformLatest emit(ClickerStatus.Disconnected)
-                }
-
-                emit(ClickerStatus.Connected(device.name))
-
-                clickerCommand.collectAsHidReports(proxy, device)
-            }
-        }
-        .stateIn(
-            scope = serviceScope,
-            started = SharingStarted.Lazily,
-            initialValue = ClickerStatus.Unsupported,
-        )
+    override val status = _status.asStateFlow()
 
     override fun sendCommand(command: ClickerCommand) {
         clickerCommand.tryEmit(command)
@@ -149,6 +128,28 @@ class ClickerService : Service(), ClickerConnection {
 
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
             .createNotificationChannel(channel)
+
+        val adapter = bluetoothAdapter ?: return
+
+        serviceScope.launch {
+            adapter.hidDeviceProxyFlow(applicationContext)
+                .flatMapLatest<_, ClickerStatus> { proxy ->
+                    if (proxy == null) {
+                        return@flatMapLatest flowOf(ClickerStatus.Disconnected)
+                    }
+
+                    proxy.connectedDeviceFlow().transformLatest { device ->
+                        if (device == null) {
+                            return@transformLatest emit(ClickerStatus.Disconnected)
+                        }
+
+                        emit(ClickerStatus.Connected(device.name))
+
+                        clickerCommand.collectAsHidReports(proxy, device)
+                    }
+                }
+                .collect { _status.value = it }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

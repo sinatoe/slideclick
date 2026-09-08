@@ -7,31 +7,32 @@ import io.github.sinatoe.slideclick.domain.ClickerConnection
 import io.github.sinatoe.slideclick.domain.ClickerStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.WhileSubscribed
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
-import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.flow.take
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClickerViewModel(
     connectionFlow: Flow<ClickerConnection?>,
 ) : ViewModel() {
-    private val isPermissionGranted = MutableStateFlow(false)
+    private val permissionGranted = MutableSharedFlow<Unit>(replay = 1)
 
-    private val connection = connectionFlow
+    private val connection = permissionGranted
+        .take(1)
+        .flatMapLatest { connectionFlow }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(2.minutes),
+            started = SharingStarted.Eagerly,
             initialValue = null,
         )
 
-    val status = isPermissionGranted
-        .filter { it }
+    val status = permissionGranted
+        .take(1)
         .flatMapLatest { connection }
         .flatMapLatest { it?.status ?: flowOf(ClickerStatus.Disconnected) }
         .stateIn(
@@ -41,7 +42,7 @@ class ClickerViewModel(
         )
 
     fun notifyPermissionGranted() {
-        isPermissionGranted.value = true
+        permissionGranted.tryEmit(Unit)
     }
 
     fun sendCommand(command: ClickerCommand) {
