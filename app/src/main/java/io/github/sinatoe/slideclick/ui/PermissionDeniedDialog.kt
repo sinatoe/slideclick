@@ -40,7 +40,7 @@ fun PermissionDeniedDialog(
 
 @Preview(showSystemUi = true)
 @Composable
-private fun PermissionDeniedDialog_Preview() {
+private fun PermissionDeniedDialogPreview() {
     AppTheme {
         PermissionDeniedDialog(
             onDismiss = {},

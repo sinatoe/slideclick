@@ -119,7 +119,7 @@ fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
         }
     }
 
-    ClickerScreen(
+    ClickerScreenContent(
         status = status,
         onRequestPermission = {
             permissionLauncher.launch(
@@ -140,7 +140,7 @@ fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun ClickerScreen(
+private fun ClickerScreenContent(
     status: ClickerStatus,
     onRequestPermission: () -> Unit,
     onSendCommand: (ClickerCommand) -> Unit,
@@ -288,9 +288,9 @@ private fun ClickerScreen(
 
 @Preview
 @Composable
-private fun ClickerScreen_Preview() {
+private fun ClickerScreenPreview() {
     AppTheme {
-        ClickerScreen(
+        ClickerScreenContent(
             status = ClickerStatus.Connected("Alice's PC"),
             onRequestPermission = {},
             onSendCommand = {},
