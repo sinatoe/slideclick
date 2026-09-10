@@ -248,16 +248,16 @@ private fun ClickerScreenContent(
                 listOf(
                     Triple(
                         ClickerCommand.BACK,
-                        painterResource(R.drawable.ic_chevron_backward),
-                        stringResource(R.string.clicker_cd_back),
+                        R.drawable.ic_chevron_backward,
+                        R.string.clicker_cd_back,
                     ),
                     Triple(
                         ClickerCommand.FORWARD,
-                        painterResource(R.drawable.ic_chevron_forward),
-                        stringResource(R.string.clicker_cd_forward),
+                        R.drawable.ic_chevron_forward,
+                        R.string.clicker_cd_forward,
                     ),
                 )
-                    .forEach { (command, iconPainter, iconDescription) ->
+                    .forEach { (command, iconId, descriptionId) ->
                         FilledTonalIconButton(
                             onClick = {
                                 onSendCommand(command)
@@ -275,8 +275,8 @@ private fun ClickerScreenContent(
                             ),
                         ) {
                             Icon(
-                                painter = iconPainter,
-                                contentDescription = iconDescription,
+                                painter = painterResource(iconId),
+                                contentDescription = stringResource(descriptionId),
                                 modifier = Modifier.size(IconButtonDefaults.extraLargeIconSize),
                             )
                         }
