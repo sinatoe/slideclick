@@ -29,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.toShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,10 +41,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -134,7 +137,7 @@ fun ClickerScreen(viewModel: ClickerViewModel = koinViewModel()) {
                 }.toTypedArray(),
             )
         },
-        onSendCommand = { viewModel.sendCommand(it) },
+        onSendCommand = viewModel::sendCommand,
     )
 }
 
@@ -170,32 +173,36 @@ private fun ClickerScreenContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                val (iconPainter, text) = when (status) {
+                val (iconId, textId, textArgs) = when (status) {
                     ClickerStatus.Disconnected -> {
-                        Pair(
-                            painterResource(R.drawable.ic_devices_outlined),
-                            stringResource(R.string.clicker_status_disconnected),
+                        Triple(
+                            R.drawable.ic_devices_outlined,
+                            R.string.clicker_status_disconnected,
+                            emptyArray(),
                         )
                     }
 
                     ClickerStatus.MissingPermission -> {
-                        Pair(
-                            painterResource(R.drawable.ic_security),
-                            stringResource(R.string.clicker_status_permission_needed),
+                        Triple(
+                            R.drawable.ic_security,
+                            R.string.clicker_status_permission_needed,
+                            emptyArray(),
                         )
                     }
 
                     is ClickerStatus.Connected -> {
-                        Pair(
-                            painterResource(R.drawable.ic_devices_filled),
-                            stringResource(R.string.clicker_status_connected, status.deviceName),
+                        Triple(
+                            R.drawable.ic_devices_filled,
+                            R.string.clicker_status_connected,
+                            arrayOf(status.deviceName),
                         )
                     }
 
                     ClickerStatus.Unsupported -> {
-                        Pair(
-                            painterResource(R.drawable.ic_devices_off),
-                            stringResource(R.string.clicker_status_unsupported),
+                        Triple(
+                            R.drawable.ic_devices_off,
+                            R.string.clicker_status_unsupported,
+                            emptyArray(),
                         )
                     }
                 }
@@ -213,7 +220,7 @@ private fun ClickerScreenContent(
                 }
 
                 Icon(
-                    painter = iconPainter,
+                    painter = painterResource(iconId),
                     contentDescription = null,
                     modifier = Modifier
                         .clip(MaterialShapes.Sunny.toShape())
@@ -224,7 +231,7 @@ private fun ClickerScreenContent(
                 )
 
                 Text(
-                    text = text,
+                    text = stringResource(textId, *textArgs),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleMedium,
                 )
@@ -238,26 +245,28 @@ private fun ClickerScreenContent(
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                listOf(
-                    Triple(
-                        ClickerCommand.BACK,
-                        R.drawable.ic_chevron_backward,
-                        R.string.clicker_cd_back,
-                    ),
-                    Triple(
-                        ClickerCommand.FORWARD,
-                        R.drawable.ic_chevron_forward,
-                        R.string.clicker_cd_forward,
-                    ),
-                )
-                    .forEach { (command, iconId, descriptionId) ->
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val actions = listOf(
+                        Triple(
+                            ClickerCommand.BACK,
+                            R.drawable.ic_chevron_backward,
+                            R.string.clicker_cd_back,
+                        ),
+                        Triple(
+                            ClickerCommand.FORWARD,
+                            R.drawable.ic_chevron_forward,
+                            R.string.clicker_cd_forward,
+                        ),
+                    )
+
+                    actions.forEach { (command, iconId, descriptionId) ->
                         FilledTonalIconButton(
                             onClick = {
                                 onSendCommand(command)
@@ -281,6 +290,7 @@ private fun ClickerScreenContent(
                             )
                         }
                     }
+                }
             }
         }
     }
