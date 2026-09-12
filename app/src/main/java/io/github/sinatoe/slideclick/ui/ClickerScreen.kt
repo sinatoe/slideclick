@@ -233,7 +233,6 @@ private fun ClickerScreenContent(
                 Text(
                     text = stringResource(textId, *textArgs),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.titleMedium,
                 )
 
                 if (status == ClickerStatus.MissingPermission) {
